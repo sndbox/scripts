@@ -1,5 +1,17 @@
 #!/usr/bin/env ruby
 
+# Example usage:
+#  1. Puts following as 'Gorelfile' in the top of a git repository
+#
+#  release do |config|
+#    config.token "..."
+#    config.os "linux darwin"
+#    config.arch "amd64"
+#  end
+#
+#  2. run this script with 'build' or 'upload' command
+#  % go-github-release.rb upload
+
 require 'fileutils'
 require 'json'
 require 'open3'
@@ -117,7 +129,7 @@ class ReleaseBuilder
     end
   end
 
-  def upload(token = ENV['GITHUB_TOKEN'])
+  def upload(token)
     client = GitHubReleaseAPIClient.new(token, @owner, @repo)
     release = client.create_release(@version)
     Dir.glob("#{@distdir}/*.zip") do |z|
@@ -148,13 +160,61 @@ class ReleaseBuilder
   end
 end
 
+class ReleaseConfig
+  def initialize
+    @token_value = nil
+    @os_value = 'linux darwin windows'
+    @arch_value = 'amd64 386'
+  end
+
+  attr_reader :token_value, :os_value, :arch_value
+
+  def token(value)
+    @token_value = value
+  end
+
+  def os(value)
+    @os_value = value
+  end
+
+  def arch(value)
+    @arch_value = value
+  end
+end
+
+$do_upload = true
+
+def release(&block)
+  config = ReleaseConfig.new
+  config.instance_eval(&block)
+
+  builder = ReleaseBuilder.new
+  builder.build(config.os_value, config.arch_value)
+  builder.compress
+  if $do_upload
+    raise "'token' must be specified" unless config.token_value
+    builder.upload(config.token_value)
+  end
+end
+
+def usage
+  STDERR.puts("Usage: #{__FILE__} (build|upload)")
+  exit(1)
+end
+
 # TODO: Add a option to check whether the same release is already uploaded
 # TODO: Add a feature to remove assets/releases
 
 if __FILE__ == $0
-  raise "GITHUB_TOKEN must be specified via ENV" unless ENV.has_key?('GITHUB_TOKEN')
-  builder = ReleaseBuilder.new
-  builder.build
-  builder.compress
-  builder.upload
+  raise "No Gorelfile" unless File.exists?('Gorelfile')
+  case ARGV[0]
+  when 'build'
+    $do_upload = false
+  when 'upload'
+    # nothing to do
+  else
+    usage
+  end
+
+  load File.expand_path('Gorelfile')
 end
