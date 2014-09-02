@@ -2,7 +2,7 @@
 
 require 'tmpdir'
 
-DEFAULT_VERSION = '1.3'
+DEFAULT_VERSION = '1.3.1'
 DEFAULT_DEST = File.join(ENV['HOME'], 'local')
 
 DOWNLOAD_URL = 'http://golang.org/dl/'
