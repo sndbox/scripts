@@ -1,0 +1,5 @@
+#!/bin/bash
+# -*- mode: sh -*-
+
+PRETTY_FORMAT='%C(blue bold)%h %C(yellow)%ad%C(magenta)%d %Creset%s'
+git log --graph --branches --pretty=format:"${PRETTY_FORMAT}" --color=always --date=short
